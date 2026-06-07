@@ -1,0 +1,15 @@
+{
+  "name": "quickcart",
+  "version": "1.0.0",
+  "description": "QuickCart - a small online store",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "seed": "node backend/db.js --seed"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}

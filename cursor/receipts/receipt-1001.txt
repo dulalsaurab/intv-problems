@@ -1,0 +1,4 @@
+Order for alice@example.com
+Product: Wireless Mouse
+Qty: 1
+Total: $24.99

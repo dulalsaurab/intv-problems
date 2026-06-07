@@ -1,0 +1,4 @@
+Order for bob@example.com
+Product: Mechanical Keyboard
+Qty: 1
+Total: $89.00

@@ -16,7 +16,8 @@ class InMemoryStorateTTL:
     def set(self, key, value, ttl=None):
         # lets say it was set to 5 seconds
         expires_at = time.monotonic() + ttl if ttl else None
-        self._data[key] = (value, expires_at)
+        with self._lock:
+            self._data[key] = (value, expires_at)
         
     
     def get():
