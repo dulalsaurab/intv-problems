@@ -89,9 +89,27 @@ if bcrypt.checkpw(pw.encode(), user.pw_hash):
 // VULNERABLE: state-changing POST, cookie auth, no token
 app.post('/account/email', auth, (req, res) => updateEmail(req.user, req.body.email));
 ```
-**Why:** a malicious site auto-submits a form using the victim's cookies → actions performed as the victim.
-**Local fix:** require an anti-CSRF token (synchronizer/double-submit).
-**Systemic fix:** `SameSite=Lax/Strict` cookies app-wide; CSRF middleware on all state-changing routes; prefer header-based tokens for APIs; require re-auth for sensitive actions.
+**Why:** a malicious site auto-submits a form using the victim's cookies → actions performed as the victim. Key precondition: auth rides on a **cookie the browser sends automatically** cross-site.
+**Local fix:** require an anti-CSRF token the attacker's site can't read (synchronizer or double-submit pattern).
+```js
+// Server issues a random token, ties it to the session, and checks it on writes.
+const csrf = require('csurf');
+app.use(csrf({ cookie: false }));              // token bound to the session
+app.post('/account/email', auth, (req, res) => {
+  // csurf middleware already rejected the request if req.body._csrf
+  // didn't match the session token. Attacker's cross-site form can't
+  // know the token (same-origin policy stops them reading it).
+  updateEmail(req.user, req.body.email);
+});
+```
+**Systemic fix:** make it safe by default at the cookie layer, then add defense in depth.
+```js
+// 1) SameSite stops the browser from attaching the auth cookie on cross-site POSTs
+res.cookie('sid', id, { httpOnly: true, secure: true, sameSite: 'Lax' });
+// 2) For JSON APIs prefer a header-based token (Authorization: Bearer ...) instead of
+//    cookies — CSRF largely evaporates because the browser won't auto-send headers.
+// 3) Require step-up re-auth for sensitive actions (password/email/payment changes).
+```
 
 ---
 
@@ -102,8 +120,31 @@ app.post('/account/email', auth, (req, res) => updateEmail(req.user, req.body.em
 requests.get(request.args['url'])   # user controls the URL
 ```
 **Why:** server fetches attacker-chosen URLs → hit internal services, cloud metadata (`http://169.254.169.254/`) to steal IAM creds, port-scan the VPC.
-**Local fix:** allowlist schemes/hosts; resolve + block private/link-local IPs; disable redirects.
-**Systemic fix:** egress firewall / no outbound by default; block metadata endpoint at network layer (IMDSv2); central "safe fetch" wrapper used everywhere; never pass raw user URLs to fetch clients.
+**Local fix:** allowlist schemes/hosts, *resolve the DNS yourself* and block private/link-local IPs, disable redirects (a redirect to `169.254.169.254` bypasses a hostname check).
+```python
+import ipaddress, socket
+from urllib.parse import urlparse
+
+def safe_fetch(url: str):
+    u = urlparse(url)
+    if u.scheme not in ("http", "https"):          # no file://, gopher://, etc.
+        raise ValueError("bad scheme")
+    ip = ipaddress.ip_address(socket.gethostbyname(u.hostname))  # resolve BEFORE fetching
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        raise ValueError("blocked internal address")  # kills 169.254.169.254, 10.x, 127.x
+    return requests.get(url, allow_redirects=False, timeout=5)  # no redirect = no bypass
+```
+**Systemic fix:** don't rely on app-layer checks alone — cut it off at the network and centralize.
+```text
+# 1) Egress firewall: the executor/app subnet has NO outbound by default; allowlist
+#    only the few hosts it legitimately needs.
+# 2) Cloud metadata: require IMDSv2 (token-based) and/or block 169.254.169.254 in the
+#    network ACL so a missed app check still can't reach it.
+# 3) One `safe_fetch` wrapper used everywhere; raw requests.get(user_url) is grep-banned.
+```
+> ⚠️ Note: the local check above still has a **TOCTOU/DNS-rebinding** gap — DNS can resolve to a
+> safe IP at check time and a private IP at fetch time. The network-layer egress block is the
+> real fix; app-layer validation is defense in depth.
 
 ---
 
@@ -162,8 +203,24 @@ app.use(cors({ origin: '*', credentials: true }));  // contradictory + unsafe
 // DEBUG=true in prod; stack traces returned to client; default admin creds
 ```
 **Why:** `origin:*` with credentials lets any site make authenticated cross-origin requests; debug leaks internals; defaults are guessable.
-**Local fix:** reflect an allowlisted origin; turn off debug; generic error pages.
-**Systemic fix:** hardened config baseline per environment; secrets/config in a vault not code; IaC + config scanning in CI; security headers via a shared middleware (`helmet`); no defaults shipped.
+**Local fix:** reflect an allowlisted origin (never `*` with credentials); turn off debug; generic error pages.
+```js
+const ALLOWED = new Set(['https://app.example.com']);
+app.use(cors({
+  origin: (origin, cb) => cb(null, ALLOWED.has(origin)),  // echo back ONLY if allowlisted
+  credentials: true,                                       // safe now: origin is constrained
+}));
+```
+**Systemic fix:** make the secure config the default, enforced per environment.
+```js
+// One hardened baseline applied app-wide; environments differ only by config, not code.
+app.use(helmet());                          // security headers everywhere (see §F)
+app.disable('x-powered-by');                // stop advertising the stack
+if (process.env.NODE_ENV === 'production') {
+  app.set('json spaces', 0);                // no debug niceties in prod
+}
+// + config/IaC scanning in CI (tfsec/checkov), secrets from a vault, no default creds shipped.
+```
 
 ---
 
@@ -173,9 +230,27 @@ app.use(cors({ origin: '*', credentials: true }));  // contradictory + unsafe
 # VULNERABLE
 hash = hashlib.md5(password.encode()).hexdigest()   # fast, unsalted, broken
 ```
-**Why:** MD5/SHA-1/SHA-256 are fast → GPU-crackable; no salt → rainbow tables.
-**Local fix:** `bcrypt`/`argon2`/`scrypt` with salt + work factor.
-**Systemic fix:** one vetted password-hashing helper used everywhere; never roll your own crypto; use AEAD (AES-GCM) for encryption; managed KMS for keys; crypto-agility (store algo+params).
+**Why:** MD5/SHA-1/SHA-256 are *fast* → a GPU tries billions/sec; no salt → precomputed rainbow tables crack the whole table at once.
+**Local fix:** a *slow*, salted KDF with a tunable work factor (the slowness is the feature).
+```python
+import bcrypt
+# Store: salt is generated and embedded in the hash output automatically.
+pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))  # rounds = work factor
+# Verify: constant-time compare, baked into checkpw (no `==`).
+if bcrypt.checkpw(attempt.encode(), pw_hash):
+    login(user)
+# argon2id is the modern preferred choice (memory-hard → resists GPU/ASIC):
+#   from argon2 import PasswordHasher; ph = PasswordHasher(); ph.hash(pw); ph.verify(h, pw)
+```
+**Systemic fix:** centralize and stay crypto-agile.
+```python
+# One helper module wraps hashing so the algorithm/params live in ONE place.
+# Store the algo + params alongside the hash (bcrypt/argon2 encode this in the string),
+# so you can bump the work factor or migrate algorithms later without a flag day:
+#   on successful login, if the stored hash is below current cost -> re-hash & save.
+# Never roll your own crypto; for *encryption* (not passwords) use AEAD (AES-GCM)
+# with keys from a managed KMS, never hardcoded.
+```
 
 ---
 
@@ -185,9 +260,22 @@ hash = hashlib.md5(password.encode()).hexdigest()   # fast, unsalted, broken
 // VULNERABLE
 const STRIPE_KEY = "sk_live_abcd1234...";   // in source, shipped to client bundle
 ```
-**Why:** secrets in git/history/frontend bundle = permanent leak → account/financial compromise.
-**Local fix:** move to server-side env/secret store; rotate the exposed key immediately.
-**Systemic fix:** secret scanning in CI + pre-commit (gitleaks/trufflehog); secrets manager/vault with rotation; never expose secrets to client code; review `.env`/bundle contents.
+**Why:** secrets in git/history/frontend bundle = *permanent* leak (git history keeps it after you "delete" it; a minified bundle still ships to every browser) → account/financial compromise.
+**Local fix:** load from the environment server-side; rotate the exposed key *immediately* (assume it's burned).
+```js
+// .env is gitignored; the key never appears in source or the client bundle.
+const STRIPE_KEY = process.env.STRIPE_KEY;
+if (!STRIPE_KEY) throw new Error('STRIPE_KEY not configured');  // fail fast, don't ship without it
+// The frontend NEVER sees this — it calls YOUR backend, which calls Stripe.
+```
+**Systemic fix:** make committing a secret impossible, not just discouraged.
+```yaml
+# pre-commit hook + CI gate that BLOCKS the commit/PR on a detected secret:
+#   - repo: https://github.com/gitleaks/gitleaks   (or trufflehog)
+# Prod secrets live in a manager (Vault / AWS|GCP Secrets Manager), injected at runtime,
+# with automatic rotation. Design rule: anything the browser receives is public —
+# the backend holds keys and proxies privileged calls.
+```
 
 ---
 
@@ -226,9 +314,24 @@ app.delete('/admin/users/:id', auth, (req, res) => deleteUser(req.params.id));
 // VULNERABLE
 res.redirect(req.query.next);   // next=https://evil.com
 ```
-**Why:** phishing (trusted domain → attacker site); can leak OAuth tokens/codes in some flows.
-**Local fix:** allow only relative paths or an allowlist of hosts.
-**Systemic fix:** central redirect helper that validates targets; never redirect to raw user input; map redirects to known keys.
+**Why:** phishing (link looks like your trusted domain → bounces to attacker site); can leak OAuth tokens/codes in some flows.
+**Local fix:** allow only same-site relative paths, or an explicit host allowlist.
+```js
+function safeRedirect(res, next) {
+  // Must be a relative path starting with a single "/", NOT "//evil.com"
+  // (protocol-relative) or "/\evil.com". Reject anything with a scheme/host.
+  if (typeof next === 'string' && /^\/(?!\/)/.test(next)) {
+    return res.redirect(next);
+  }
+  return res.redirect('/');   // fall back to a known-safe default
+}
+```
+**Systemic fix:** never redirect to raw user input — indirect it through known keys.
+```js
+// Client sends a KEY, not a URL. Attacker can't point it anywhere you didn't list.
+const DESTS = { dashboard: '/app', billing: '/app/billing' };
+res.redirect(DESTS[req.query.to] ?? '/');   // one central helper used everywhere
+```
 
 ---
 
@@ -238,9 +341,24 @@ res.redirect(req.query.next);   // next=https://evil.com
 # VULNERABLE
 tree = etree.parse(user_xml)   # default parser resolves external entities
 ```
-**Why:** `<!ENTITY xxe SYSTEM "file:///etc/passwd">` → file read, SSRF, DoS (billion laughs).
-**Local fix:** disable DTD/entity resolution (`resolve_entities=False`, `no_network`).
-**Systemic fix:** prefer JSON; if XML required, hardened parser config by default; disable DTDs globally.
+**Why:** `<!ENTITY xxe SYSTEM "file:///etc/passwd">` → file read, SSRF, DoS (billion laughs entity expansion).
+**Local fix:** turn off the dangerous parser features — entity resolution and network access.
+```python
+from lxml import etree
+parser = etree.XMLParser(
+    resolve_entities=False,   # don't expand &xxe; -> no file read / billion laughs
+    no_network=True,          # external SYSTEM refs can't fetch -> no SSRF
+    dtd_validation=False,
+)
+tree = etree.parse(user_xml, parser)
+# Stdlib defusedxml is the drop-in safe alternative:
+#   from defusedxml.ElementTree import parse   # hardened by default
+```
+**Systemic fix:** prefer JSON; if XML is unavoidable, make the hardened parser the only one.
+```python
+# Wrap parsing in ONE module that always uses the safe parser; ban raw etree.parse /
+# minidom / xml.sax in review. defusedxml everywhere disables DTDs globally.
+```
 
 ---
 
@@ -250,9 +368,29 @@ tree = etree.parse(user_xml)   # default parser resolves external entities
 // VULNERABLE
 fs.writeFile(`./public/${file.originalname}`, file.buffer);  // shell.php uploaded & served
 ```
-**Why:** upload executable/script into a web-served dir → RCE; or path traversal via filename.
-**Local fix:** validate content type/magic bytes, generate random filename, store outside webroot, set non-executable.
-**Systemic fix:** uploads go to object storage (not app server), served via signed URLs; AV/type scanning; size limits; never trust `originalname`.
+**Why:** upload executable/script into a web-served dir → RCE; or path traversal via filename (`../../`); or content-type spoofing (`.png` that's really PHP).
+**Local fix:** verify magic bytes (not the client's extension/MIME), generate your own filename, store outside the webroot, mark non-executable.
+```js
+const crypto = require('crypto');
+const { fileTypeFromBuffer } = require('file-type');
+
+async function saveUpload(file) {
+  const ALLOWED = { 'image/png': '.png', 'image/jpeg': '.jpg' };
+  const type = await fileTypeFromBuffer(file.buffer);   // sniff REAL type from bytes
+  if (!type || !ALLOWED[type.mime]) throw new Error('unsupported file type');
+  const name = crypto.randomUUID() + ALLOWED[type.mime]; // OUR name -> no traversal, no .php
+  const path = `/var/uploads/${name}`;                   // outside webroot -> never served as code
+  await fs.promises.writeFile(path, file.buffer, { mode: 0o644 });  // not executable
+  return name;
+}
+```
+**Systemic fix:** get uploads off the app server entirely.
+```text
+# Uploads -> object storage (S3/GCS), served back via short-lived SIGNED URLs.
+# The app server never stores or serves user files, so "upload a webshell" has no
+# code-execution surface. Add: size limits (reject early), AV/type scanning,
+# Content-Disposition: attachment so browsers download rather than render.
+```
 
 ---
 
@@ -289,8 +427,23 @@ except Exception as e:
 app.post('/login', (req, res) => checkPassword(...));  // unlimited attempts
 ```
 **Why:** enables brute force, credential stuffing, OTP guessing, cost-based DoS (esp. expensive LLM calls).
-**Local fix:** per-IP/per-account rate limit + exponential backoff/lockout.
-**Systemic fix:** gateway-level rate limiting + WAF; quotas on expensive endpoints (model inference); CAPTCHA on abuse; circuit breakers.
+**Local fix:** cap attempts per IP *and* per account (IP-only is bypassed by botnets; account-only enables lockout-DoS of a victim).
+```js
+const rateLimit = require('express-rate-limit');
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,                 // 15-minute window
+  max: 5,                                    // 5 attempts per IP per window
+  keyGenerator: (req) => req.ip + ':' + req.body.username,  // per IP+account pair
+  handler: (req, res) => res.status(429).json({ error: 'too many attempts' }),
+});
+app.post('/login', loginLimiter, (req, res) => checkPassword(/* ... */));
+```
+**Systemic fix:** push limiting outward so app code can't forget it, and protect cost-sensitive paths.
+```text
+# Rate-limit + WAF at the gateway/edge (shared, distributed counter in Redis so it
+# works across instances). Per-endpoint QUOTAS on expensive ops (model inference,
+# report generation). CAPTCHA / step-up on abuse signals. Circuit breakers to shed load.
+```
 
 ---
 
@@ -312,8 +465,27 @@ app.post('/login', (req, res) => checkPassword(...));  // unlimited attempts
 // VULNERABLE: no audit log on auth, authz failures, admin actions
 ```
 **Why:** breaches go undetected; no forensics. Inability to detect = longer dwell time.
-**Local fix:** log authentication, authz denials, and sensitive actions with who/what/when.
-**Systemic fix:** centralized tamper-resistant logging + alerting; detection rules for anomalies; retention policy; never log secrets/tokens/PII.
+**Local fix:** emit a structured audit event on auth, authz denials, and sensitive actions — who/what/when/where — and *never* the secret itself.
+```python
+import logging, json
+audit = logging.getLogger("audit")
+
+def log_event(action, user_id, ok, req):
+    audit.info(json.dumps({
+        "action": action,            # "login", "delete_user", "authz_denied"
+        "user_id": user_id,          # WHO (id, not password/token)
+        "success": ok,               # WHAT happened
+        "ip": req.client.host,       # WHERE from
+        "ts": datetime.utcnow().isoformat(),  # WHEN
+    }))
+# log_event("authz_denied", user.id, False, request)  # on every 403
+```
+**Systemic fix:** centralize, protect, and act on the logs.
+```text
+# Ship to a centralized, append-only/tamper-resistant store (SIEM) with alerting +
+# anomaly detection (e.g. spike in authz_denied = probing). Set a retention policy.
+# Scrub secrets/tokens/PII at the logging boundary so they can never land in logs.
+```
 
 ---
 
