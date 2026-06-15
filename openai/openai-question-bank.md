@@ -1,6 +1,6 @@
 # OpenAI Coding Interview — Question Bank
 
-28 questions tuned to OpenAI's style: **build a small system → iterate → handle edge cases**.
+29 questions tuned to OpenAI's style: **build a small system → iterate → handle edge cases**.
 They write *more* code than Meta/Google, layer follow-ups over 60–75 min, and grade
 production-quality thinking (edge cases, locks, persistence, testing) — not one clever insight.
 
@@ -104,9 +104,9 @@ Core: `@dataclass` modeling, clean API, hidden edge cases.
 `set(key,val,ts)`; `get(key,ts)` → latest value **at or before** ts.
 Core: per-key sorted list + **`bisect`**. Follow: real timestamps + multithreading (global vs per-key lock vs optimistic), disk persistence.
 
-**22. Serialize/deserialize a KV store** ⭐
+**22. Serialize/deserialize a KV store** ⭐ (OAI-verified Apr–May 2026)
 Keys/values contain any char including the delimiter — naive `split` breaks.
-Core: **length-prefix encoding** (`3:key5:value`, Redis protocol). Pairs with #21.
+Core: **length-prefix encoding** (`2:ab3:xyz`, Redis RESP). The graded part is **lifecycle (serialize/deserialize twice — why?) + persistence to a mock S3 bucket + chunked upload**. Pairs with #21.
 
 **23. Resumable iterator** ⭐
 Pause/resume across calls, keep state, nested structures, `skip`/`reset`.
@@ -123,6 +123,10 @@ Core: **address = 32-bit int**; next/prev = ±1 (carry/borrow falls out); CIDR v
 **28. In-memory job scheduler** ⭐
 Run jobs at a delay/time: one-shot → recurring → cancel → background thread.
 Core: **min-heap keyed (run_at, seq)** + lazy cancellation; no busy-wait (`Condition.wait(timeout)`). Distinct from #12 (virtual clock) and #10 (deps).
+
+**29. Disease spread in flower grid** ⭐
+Min time to infect all flowers → unreachable cells → containment.
+Core: **multi-source BFS** (seed queue with all infected, expand level-by-level, count minutes), `-1` if any healthy remains. Distinct from #15 (cellular automaton).
 
 ---
 
