@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly (deliverable)
+
+A class `Counter` with:
+- `increment() -> None`
+- `value() -> int`
+
+Pin: must be **correct under many concurrent threads** — the `threads * iterations` assert must pass every run. Fix the read-modify-write race with a `Lock` (held only around `count += 1`). Be ready to explain why `+=` is non-atomic and to extend to per-key / sharded counters.
+
+---
+
 ## Problem
 
 You are given a counter that produces the **wrong total** when incremented from many threads. Find the data race and fix it with the minimal correct lock (without over-locking and killing throughput).

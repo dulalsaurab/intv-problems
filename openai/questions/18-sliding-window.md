@@ -6,6 +6,14 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant A)
+
+- `length_of_longest_substring(s) -> int` — length of the longest substring of `s` with no repeating characters
+
+Pin: **O(n)**, single pass, two-pointer window + last-seen map. (Variant B — longest subarray with sum ≤ K — is the alternate; pick A for the drill, but know why non-negativity makes the window valid.)
+
+---
+
 ## Problem
 
 ### Variant A — Longest Substring Without Repeating Characters

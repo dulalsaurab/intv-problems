@@ -6,6 +6,15 @@
 
 ---
 
+## ✅ Implement exactly
+
+A function:
+- `crawl(start_url, fetch, num_workers=N) -> set[str]` — `fetch(url) -> list[str]` returns linked URLs (mocked/provided)
+
+Pin: crawl from `start_url` using `num_workers` threads; visit each URL **at most once** (thread-safe visited set); stay within the **same hostname** as `start_url`; a failing `fetch` must not kill or deadlock the crawl. **Terminate cleanly when all work is done** (not when the queue is momentarily empty) — that's the hard part.
+
+---
+
 ## Problem
 
 Implement a multithreaded web crawler.

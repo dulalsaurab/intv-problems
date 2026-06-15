@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `CreditManager` with:
+- `add_credits(amount, expiry) -> None` — grant `amount` credits expiring at `expiry`
+- `consume(amount, now) -> bool` — consume from the **soonest-to-expire non-expired** batch first; **all-or-nothing** (consume nothing and return `False` if insufficient valid credits)
+- `balance(now) -> int` — total non-expired credits at `now`
+
+Pin: a batch is valid iff `expiry > now` (state strict vs. `>=`); expired batches are purged lazily; min-heap / sorted structure keyed by `expiry`.
+
+---
+
 ## Problem
 
 Design a system that manages time-limited compute credits (think GPU credits that expire).

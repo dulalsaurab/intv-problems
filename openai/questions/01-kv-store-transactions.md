@@ -6,6 +6,20 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `KVStore` with:
+- `set(key, value) -> None`
+- `get(key) -> value | None` — `None` if absent
+- `delete(key) -> None` — idempotent (no error if absent)
+- `begin() -> None` — supports nesting
+- `commit() -> bool` — `False` if no open txn (no-op, don't raise)
+- `rollback() -> bool` — `False` if no open txn
+
+Pin: `None` is a **legal value**, so use a sentinel for the delete tombstone (not `None`). Reads inside a txn see uncommitted writes of that txn and its parents.
+
+---
+
 ## Problem
 
 Design an in-memory key-value store that supports basic operations and **nested transactions**.

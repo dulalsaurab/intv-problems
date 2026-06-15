@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly (deliverable)
+
+Given a buggy implementation, produce:
+1. A **failing test** that deterministically reproduces the bug (ideally diffed against a reference model like `OrderedDict`).
+2. The **minimal** corrected version (smallest change, not a rewrite).
+3. A one-paragraph explanation of the root cause + what else you'd test.
+
+Pin: preserve the original complexity guarantee (e.g. O(1) for LRU). State whether the original violated it.
+
+---
+
 ## Problem
 
 You are handed an existing implementation (LRU cache or rate limiter) that **mostly works but has a subtle bug**. Your job:

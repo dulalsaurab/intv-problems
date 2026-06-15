@@ -6,6 +6,18 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `ResumableIterator(data)` where `data` is a possibly-nested list (ints or sub-lists):
+- `next() -> element` — next element in flattened order
+- `has_next() -> bool` — **does not consume**; idempotent (one-element lookahead)
+- `skip(n) -> None` — skip the next `n` elements
+- `reset() -> None` — restart from the beginning
+
+Pin: flatten lazily (don't pre-flatten a huge structure); `skip` past the end leaves `has_next() == False` (no crash). An explicit stack-based iterator handles `reset`/`peek` more cleanly than a generator — discuss the trade-off.
+
+---
+
 ## Problem
 
 Implement an iterator that can **pause and resume** across calls, preserving its position, with extra controls.

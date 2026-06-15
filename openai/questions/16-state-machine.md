@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant A — Vending Machine)
+
+A class `VendingMachine(prices, stock)` with:
+- `insert_coin(amount) -> None` — add to balance
+- `select(item) -> result` — if balance ≥ price and in stock: dispense, return change, reset to IDLE; else return a "insufficient"/"out of stock" message and stay collecting
+- `cancel() -> amount` — refund current balance, return to IDLE
+
+Pin: states as an enum (`IDLE`/`COLLECTING`/`DISPENSING`) with explicit transitions; invalid events handled gracefully. (Variant B — elevator — is the alternate; pick A for the drill.)
+
+---
+
 ## Problem
 
 ### Variant A — Vending Machine

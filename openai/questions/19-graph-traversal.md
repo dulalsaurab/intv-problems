@@ -6,6 +6,14 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant B — Course Schedule II)
+
+- `find_order(num_courses, prerequisites) -> list[int]` — `prerequisites[i] = [a, b]` means `b` before `a`. Return a valid ordering of all courses, or `[]` if impossible (cycle).
+
+Pin: Kahn's algorithm (BFS on in-degrees) — naturally detects cycles (if you can't output all `num_courses`, there's a cycle). (Variant A — word ladder BFS — is the alternate; B reinforces topo/cycle used in #8/#10.)
+
+---
+
 ## Problem
 
 ### Variant A — Word Ladder

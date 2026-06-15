@@ -6,6 +6,21 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `FileSystem` with:
+- `mkdir(path) -> None` — creates missing parents
+- `add_file(path, content) -> None` — create/overwrite
+- `ls(path) -> list[str]` — file → `[name]`; dir → **sorted** child names
+- `read_file(path) -> str`
+- `cd(path) -> None` — absolute, relative, `.`, `..`, symlinks (with cycle detection → raise)
+- `pwd() -> str`
+- `symlink(link_path, target_path) -> None` (to exercise cycle detection)
+
+Pin: paths are `/`-separated; after `cd`, relative paths resolve against cwd; `cd ..` at root stays at root; creating under a file path is an error. `find(pattern)` is an extension, not required for the base.
+
+---
+
 ## Problem
 
 Design an in-memory file system.

@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `Spreadsheet` with:
+- `set_cell(cell, value) -> None` — `value` is a number **or** a formula string starting with `=` (e.g. `"=A1+A2"`)
+- `get_cell(cell) -> number`
+
+Pin: support `+ - * /` and parentheses, referencing other cells. Setting a formula that creates a **cycle** → raise `ValueError`, leaving prior state intact. Empty/unset cell referenced in a formula = `0`. Dependents must reflect updates after any `set_cell`.
+
+---
+
 ## Problem
 
 Design a spreadsheet engine that supports cells holding literal values or formulas that reference other cells.

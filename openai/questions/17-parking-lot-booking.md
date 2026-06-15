@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant A — Parking Lot)
+
+A class `ParkingLot(small, medium, large)` (counts of each spot size) with:
+- `park(vehicle) -> ticket | None` — allocate the smallest suitable free spot; `None` if full
+- `leave(ticket) -> None` — free the spot
+- `availability() -> dict` — free count per size
+
+Pin: `vehicle` has a `size`; fit rule = a vehicle needs a spot ≥ its size (state your rule). O(1) park/leave via per-size free lists. Double-`leave` handled. (Variant B — booking/intervals — is the alternate; pick A for the drill.)
+
+---
+
 ## Problem
 
 ### Variant A — Parking Lot

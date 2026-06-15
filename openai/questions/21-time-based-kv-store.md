@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `TimeMap` with:
+- `set(key, value, timestamp) -> None`
+- `get(key, timestamp) -> value | ""` — value with the **largest stored ts ≤ timestamp**; `""` if none
+
+Pin: timestamps for a given key are **strictly increasing** (so `set` is append-only). `get` is **O(log n)** via `bisect` over the per-key timestamp list. Per-key history independent. (Out-of-order `set`, real clocks, locking, persistence are the graded **follow-ups**.)
+
+---
+
 ## Problem
 
 Design a key-value store that keeps **multiple timestamped versions** of each key and lets you read the value as of a given time.

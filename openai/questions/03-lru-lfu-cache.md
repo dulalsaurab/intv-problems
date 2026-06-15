@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly (drill target)
+
+A class `LRUCache(capacity)` with:
+- `get(key) -> value | -1` (-1 if absent; also marks key most-recently-used)
+- `put(key, value) -> None` (insert/update; evict LRU if over capacity)
+
+Both strictly **O(1)**. Do **LRU first**, then refactor to **LFU** (tie-break LFU by LRU). Handle `capacity == 0`.
+
+---
+
 ## Problem
 
 ### Part A — LRU Cache

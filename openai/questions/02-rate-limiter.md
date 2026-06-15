@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly (drill target)
+
+A class with:
+- `allow_request(user_id, timestamp) -> bool`
+
+Build the **sliding-window log** version as your primary: allow at most `N` requests per user within the trailing `W` seconds ending at `timestamp`. `N` and `W` are ctor args. Be ready to swap the algorithm to **token bucket** on request.
+
+Pin: per-user state is independent; `timestamp` is float seconds, non-decreasing per user; O(1) amortized per call.
+
+---
+
 ## Problem
 
 Design a rate limiter that decides whether a request from a given user should be allowed.

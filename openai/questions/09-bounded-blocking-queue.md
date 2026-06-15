@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `BoundedQueue(capacity)` with:
+- `put(item) -> None` — blocks while full
+- `get() -> item` — blocks while empty (FIFO)
+- `size() -> int`
+
+Pin: build from `threading.Lock` + `Condition` (do **not** wrap `queue.Queue`). No busy-wait; re-check the predicate in a `while` loop (spurious wakeups). Correct with multiple concurrent producers and consumers.
+
+---
+
 ## Problem
 
 Implement a thread-safe bounded blocking queue (do **not** just wrap `queue.Queue` — build it from a lock + condition variables).

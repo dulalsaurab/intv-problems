@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `Metrics` with:
+- `record(metric, value, timestamp) -> None`
+- `query(metric, agg, start, end) -> number` — `agg` ∈ `{"sum","avg","count","min","max"}`, over samples with `start <= ts < end` (half-open)
+
+Pin: empty range → `0` for sum/count, `None` for avg/min/max (state your convention). `query_window` (sliding) and `percentile` are **extensions** — get the bucketed range query solid first.
+
+---
+
 ## Problem
 
 Design a system that ingests timestamped metric samples and answers aggregate queries over time windows.

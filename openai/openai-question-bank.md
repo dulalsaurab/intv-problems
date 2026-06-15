@@ -1,6 +1,6 @@
 # OpenAI Coding Interview — Question Bank
 
-26 questions tuned to OpenAI's style: **build a small system → iterate → handle edge cases**.
+28 questions tuned to OpenAI's style: **build a small system → iterate → handle edge cases**.
 They write *more* code than Meta/Google, layer follow-ups over 60–75 min, and grade
 production-quality thinking (edge cases, locks, persistence, testing) — not one clever insight.
 
@@ -115,6 +115,14 @@ Core: generator / explicit state machine + saved position (`islice`).
 **24. GPU credit management** ⭐
 Time-based credits that expire; consume **soonest-to-expire first (FIFO)**.
 Core: heap/queue keyed by expiry + timestamped ops.
+
+**27. IPv4 address iterator** ⭐
+Iterate addresses from a start: forward → reverse → CIDR block (`/n`).
+Core: **address = 32-bit int**; next/prev = ±1 (carry/borrow falls out); CIDR via bitmask. Pairs with #23.
+
+**28. In-memory job scheduler** ⭐
+Run jobs at a delay/time: one-shot → recurring → cancel → background thread.
+Core: **min-heap keyed (run_at, seq)** + lazy cancellation; no busy-wait (`Condition.wait(timeout)`). Distinct from #12 (virtual clock) and #10 (deps).
 
 ---
 

@@ -6,6 +6,15 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant A — Game of Life)
+
+- `step(board) -> new_board` — `board` is `list[list[int]]` (1=live, 0=dead); return the **next** generation
+- `simulate(board, generations) -> board` — apply `step` N times
+
+Pin: **all cells update simultaneously** (an updated cell must not affect its neighbors in the same generation); cells outside the grid count as dead. (Variant B — robot on grid — is the alternate; pick A for the drill.)
+
+---
+
 ## Problem
 
 ### Variant A — Conway's Game of Life

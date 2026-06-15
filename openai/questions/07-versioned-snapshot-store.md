@@ -6,6 +6,18 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `VersionStore` with:
+- `set(key, value) -> int` — returns the new global version (monotonic from 1)
+- `get(key, version=None) -> value | None` — `version=None` → latest; else value as of largest write ≤ `version`
+- `snapshot() -> snapshot_id`
+- `restore(snapshot_id) -> None`
+
+Pin: `get(key, version)` is **O(log n)** in that key's versions (sorted list + binary search). A key not yet written at `version` → `None`. Don't deep-copy the whole store on `set`/`snapshot`.
+
+---
+
 ## Problem
 
 Design a key-value store where **every write creates a new version**, and you can read the value of a key as of any past version.

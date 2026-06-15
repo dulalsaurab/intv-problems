@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `Scheduler(workers)` with:
+- `add_task(task_id, fn, deps=[]) -> None` — `fn` is a **zero-arg** callable returning a result
+- `run() -> dict[task_id, result]` — run all tasks; a task starts only after all `deps` complete; independent tasks run concurrently (≤ `workers`)
+
+Pin: maximize parallelism (start a task the instant its deps finish — not in waves). Detect cycles / missing deps → raise. **Passing dependency results into `fn`** and **failure-cancels-dependents** are extensions.
+
+---
+
 ## Problem
 
 Implement a scheduler that runs tasks respecting dependencies, running independent tasks **concurrently**.

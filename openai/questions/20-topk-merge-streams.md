@@ -6,6 +6,14 @@
 
 ---
 
+## ✅ Implement exactly (drill target: Variant B — Merge K Sorted Streams)
+
+- `merge(streams) -> iterator` — `streams` is a list of iterators each yielding ascending values; yield **all** values in globally sorted order, **lazily**
+
+Pin: min-heap of `(head_value, stream_index)`; pop the smallest, pull the next from that stream, push it. Never hold more than K elements at once (works on streams too large for memory). Must be a generator. (Variant A — streaming top-K with a size-K min-heap — is the alternate.)
+
+---
+
 ## Problem
 
 ### Variant A — Streaming Top-K

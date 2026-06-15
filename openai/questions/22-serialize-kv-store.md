@@ -6,6 +6,16 @@
 
 ---
 
+## ✅ Implement exactly
+
+Two functions:
+- `serialize(store: dict[str, str]) -> str`
+- `deserialize(data: str) -> dict[str, str]`
+
+Pin: `deserialize(serialize(d)) == d` for **all** dicts — including keys/values containing your delimiter, empty strings, and unicode. Use **length-prefix encoding** (`<len>:<payload>`), not naive `split`. If you encode to bytes, count **bytes** not characters.
+
+---
+
 ## Problem
 
 Implement serialization and deserialization for a key-value store where **keys and values may contain any character**, including whatever delimiter you might pick (e.g. `:`, `,`, newline, even null bytes).

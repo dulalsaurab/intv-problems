@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `Broker` with:
+- `subscribe(topic, callback) -> handle` — returns an opaque handle for unsubscribe
+- `unsubscribe(handle) -> None`
+- `publish(topic, message) -> None` — call every subscriber of `topic` in subscription order
+
+Pin: a subscriber raising must **not** stop delivery to others; `publish` to a topic with no subscribers is a silent no-op. Do **exact-topic matching first**, then add `*`/`#` wildcards as the extension.
+
+---
+
 ## Problem
 
 Design an in-memory publish/subscribe message broker.

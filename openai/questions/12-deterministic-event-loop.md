@@ -6,6 +6,17 @@
 
 ---
 
+## ✅ Implement exactly
+
+A class `EventLoop` with:
+- `schedule(delay, callback) -> None` — fire `callback` at `now() + delay`
+- `run() -> None` — advance the virtual clock, firing callbacks in time order until none remain
+- `now() -> number` — current virtual time (starts at 0)
+
+Pin: **deterministic** — ties (same fire time) break by **insertion order** (heap keyed `(time, seq)`). No real `sleep`; clock jumps to the next event. Callbacks may `schedule` more work during `run()`. `cancel` is an extension.
+
+---
+
 ## Problem
 
 Implement a single-threaded, deterministic event loop driven by a **virtual clock** (no real sleeping).

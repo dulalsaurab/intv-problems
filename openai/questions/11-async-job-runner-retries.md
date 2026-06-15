@@ -6,6 +6,15 @@
 
 ---
 
+## ✅ Implement exactly
+
+A coroutine:
+- `async run_jobs(jobs, max_concurrency, max_retries) -> list` — `jobs` is a list of **zero-arg async callables**; returns results in **input order**
+
+Pin: at most `max_concurrency` in flight (`asyncio.Semaphore`); on exception, retry up to `max_retries` more times with exponential backoff (`base * 2**attempt`) via `await asyncio.sleep`; if all attempts fail, the result slot holds the final exception object (don't raise out of the whole batch).
+
+---
+
 ## Problem
 
 Implement an async job runner that executes a batch of async jobs with **bounded concurrency** and **automatic retries**.

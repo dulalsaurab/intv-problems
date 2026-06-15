@@ -6,6 +6,18 @@
 
 ---
 
+## ✅ Implement exactly (staged)
+
+A class `DB` with:
+- `create_table(name, columns) -> None`
+- `insert(table, row: dict) -> None`
+- `select(table, columns="*", where=None) -> list[dict]` — `where` is `(col, op, value)` or a callable `row -> bool`
+- `join(left, right, on=(left_col, right_col)) -> list[dict]` — inner join, merged rows
+
+Pin: build in order insert → select+where → join. Separate storage (row store) from execution (filter/project/join). State how you handle missing columns. Indexes, GROUP BY, SQL parsing are **extensions**.
+
+---
+
 ## Problem
 
 Build a small in-memory relational database, growing it one capability at a time as the interviewer adds requirements.
